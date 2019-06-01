@@ -45,6 +45,7 @@ namespace nervana
     class loader;
     class loader_factory;
     class loader_local;
+    class loader_tbb;
     class dataset_builder;
     class batch_decoder;
 }
@@ -255,4 +256,63 @@ private:
 
     // How many times we should increase input data size for decoder
     const int m_input_multiplier = 8;
+};
+
+class nervana::loader_tbb final : public nervana::loader
+{
+public:
+    loader_tbb(const std::string&);
+    loader_tbb(const nlohmann::json&);
+
+    ~loader_tbb() override;
+
+    const std::vector<std::string>& get_buffer_names() const override;
+    const std::vector<std::pair<std::string, shape_type>>& get_names_and_shapes() const override;
+    const shape_t& get_shape(const std::string& name) const override;
+
+    int record_count() const override
+    {
+        return m_manifest_nds ? m_manifest_nds->record_count() : m_manifest_file->record_count();
+    }
+    int      batch_size() const override { return m_batch_size; }
+    int      batch_count() const override { return m_batch_count_value; }
+    iterator begin() override
+    {
+        reset();
+        return m_current_iter;
+    }
+    void load_record(manifest_file::record& element_list,
+                     encoded_record_list& rc,
+                     size_t index,
+                     fixed_buffer_map& outputs);
+    iterator end() override { return m_end_iter; }
+    // These are returning references
+    iterator&               get_current_iter() override { return m_current_iter; }
+    iterator&               get_end_iter() override { return m_end_iter; }
+    const fixed_buffer_map* get_output_buffer() const override { return m_output_buffer_ptr; }
+    const size_t&           position() override { return m_position; }
+    void                    reset() override
+    {
+        m_position          = 0;
+    }
+
+    nlohmann::json get_current_config() const override { return m_current_config; }
+    const char*    get_session_id() const override { return ""; }
+private:
+    friend class nervana::loader::iterator;
+
+    loader_tbb() = delete;
+    void initialize(const nlohmann::json& config_json);
+    void increment_position() override;
+
+    iterator                                                m_current_iter;
+    iterator                                                m_end_iter;
+    std::shared_ptr<manifest_file>                          m_manifest_file;
+    std::shared_ptr<manifest_nds>                           m_manifest_nds;
+    std::shared_ptr<provider_interface>                     m_provider;
+    int                                                     m_batch_size;
+    int                                                     m_batch_count_value;
+    size_t                                                  m_position{0};
+    fixed_buffer_map*                                       m_output_buffer_ptr{nullptr};
+    nlohmann::json                                          m_current_config;
 };

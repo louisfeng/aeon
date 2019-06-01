@@ -51,6 +51,7 @@ public:
     size_t size() const { return m_elements.size(); }
     void add_element(const void* data, size_t size)
     {
+        // XXX lfeng: USE MEMCPY HERE
         std::vector<char> tmp(size);
         const char*       p = (const char*)data;
         for (size_t i = 0; i < size; i++)

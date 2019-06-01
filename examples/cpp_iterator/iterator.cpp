@@ -45,7 +45,7 @@ string generate_manifest_file(size_t record_count)
         {
             f << image_files[i % 2];
             f << manifest_file::get_delimiter();
-            f << std::to_string(i % 2);
+            f << std::to_string(i);
             f << "\n";
         }
     }
@@ -70,6 +70,8 @@ int main(int argc, char** argv)
                              {"flip_enable", true}}};
     json config = {{"manifest_root", manifest_root},
                          {"manifest_filename", manifest},
+                         {"decode_thread_count", 1},
+                         {"block_size", 3},
                          {"batch_size", batch_size},
                          {"iteration_mode", "ONCE"},
                          {"etl", {image_config, label_config}},
@@ -83,9 +85,10 @@ int main(int argc, char** argv)
     cout << "record count: " << train_set->record_count() << endl;
 
     int batch_no = 0;
-    for(const auto& batch : *train_set)
-    {
-        cout << "\tbatch " << batch_no << " [number of elements: " << batch.size() << "]" << endl;
-        batch_no++;
-    }
+//    for(const auto& batch : *train_set)
+//    {
+//        cout << "\tbatch " << batch_no << " [number of elements: " << batch.size() << "]" << endl;
+//        batch_no++;
+//    }
 }
+

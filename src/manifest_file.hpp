@@ -71,6 +71,8 @@ public:
 
     std::vector<std::vector<std::string>>* next() override;
     void                                   reset() override;
+    std::vector<std::vector<record>>& get_block_list()
+    { return m_block_list; }
 
     size_t   block_count() const { return m_block_list.size(); }
     size_t   record_count() const override { return m_record_count; }
