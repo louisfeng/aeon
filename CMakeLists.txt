@@ -120,7 +120,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-used-but-marked-unused") # from sox
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-compat-deprecated-writable-strings")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-double-promotion")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreserved-id-macro")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reserved-id-macro")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
 
@@ -159,6 +159,14 @@ if (PYTHON_PLUGIN)
     endif ()
 endif (PYTHON_PLUGIN)
 
+# TBB
+set(TBB_ROOT_DIR /opt/intel/tbb2019_20190522oss)
+set(TBB_INCLUDE_DIRS ${TBB_ROOT_DIR}/include)
+include_directories(${TBB_INCLUDE_DIRS})
+set(TBB_RELEASE_DIR ${TBB_ROOT_DIR}/lib/intel64/gcc4.7)
+link_directories(${TBB_RELEASE_DIR})
+set(TBB_LIBS tbb tbbmalloc)
+set(TBB_LIBRARY_DIRS ${TBB_RELEASE_DIR})
 
 if (PYTHONLIBS_FOUND)
     find_package(NumPy)
