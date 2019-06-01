@@ -424,6 +424,10 @@ void loader_tbb::initialize(const json& config_json)
                 load_record(r, rc);
               }
               // ask provider to process the encoded records
+              // it's actually better to combine this with load_record to keep data
+              // hot in the cache. otherwise we are loading images again. But the API
+              // do this two steps. My previous commit is not the "right" way of using
+              // the API, but performs a bit better.
               for (size_t j = 0; j < block_list[i].size(); j++) {
                   m_provider->provide(j, rc, outputs);
               }
