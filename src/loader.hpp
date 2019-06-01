@@ -282,9 +282,7 @@ public:
         return m_current_iter;
     }
     void load_record(manifest_file::record& element_list,
-                     encoded_record_list& rc,
-                     size_t index,
-                     fixed_buffer_map& outputs);
+                     encoded_record_list& rc);
     iterator end() override { return m_end_iter; }
     // These are returning references
     iterator&               get_current_iter() override { return m_current_iter; }

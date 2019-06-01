@@ -117,6 +117,7 @@ void provider::provider_base::provide(int                           idx,
 {
     augmentation aug;
     int          index = 0;
+//    std::cout << "provider base: " << in_buf.size() << std::endl;
     for (const shared_ptr<provider::interface>& provider : m_providers)
     {
         provider->provide(idx, in_buf.record(idx).element(index++), out_buf, aug);

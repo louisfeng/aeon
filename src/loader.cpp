@@ -315,9 +315,7 @@ loader_tbb::~loader_tbb()
 {
 }
 void loader_tbb::load_record(manifest_file::record& element_list,
-                             encoded_record_list& rc,
-                             size_t index,
-                             fixed_buffer_map& outputs)
+                             encoded_record_list& rc)
 {
     const vector<manifest::element_t>& types = m_manifest_file->get_element_types();
     encoded_record record;
@@ -366,8 +364,6 @@ void loader_tbb::load_record(manifest_file::record& element_list,
         }
     }
     rc.add_record(std::move(record));
-
-    m_provider->provide(index, rc, outputs);
 }
 
 void loader_tbb::initialize(const json& config_json)
@@ -418,15 +414,18 @@ void loader_tbb::initialize(const json& config_json)
               encoded_record_list rc;
               fixed_buffer_map outputs;
               outputs.add_items(m_provider->get_output_shapes(), block_list[i].size());
-              size_t index = 0;
+              // load all records in this block
               for (auto& r : block_list[i]) {
                 //for (auto& e : r) {
                 //  std::cout << e << " ";
                 //}
                 //std::cout << std::endl;
                 //std::cout << "index: " << index << std::endl;
-                load_record(r, rc, index, outputs);
-                index++;
+                load_record(r, rc);
+              }
+              // ask provider to process the encoded records
+              for (size_t j = 0; j < block_list[i].size(); j++) {
+                  m_provider->provide(j, rc, outputs);
               }
             }
         });
