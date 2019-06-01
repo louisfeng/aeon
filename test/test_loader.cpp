@@ -549,12 +549,13 @@ TEST(benchmark, imagenet)
         int    width      = 224;
         size_t batch_size = 128;
         string manifest   = file_util::path_join(manifest_root, "train-index.csv");
-
+        std::cout << manifest << std::endl;
         json image_config = {
             {"type", "image"}, {"height", height}, {"width", width}, {"channel_major", false}};
         json label_config = {{"type", "label"}, {"binary", false}};
         auto aug_config   = vector<json>{{{"type", "image"},
                                         {"scale", {0.5, 1.0}},
+                                        {"angle", {-0.2, 0.2}},
                                         {"saturation", {0.5, 2.0}},
                                         {"contrast", {0.5, 1.0}},
                                         {"brightness", {0.5, 1.0}},
@@ -563,7 +564,7 @@ TEST(benchmark, imagenet)
                        {"manifest_filename", manifest},
                        {"batch_size", batch_size},
                        {"iteration_mode", "INFINITE"},
-                       {"cache_directory", cache_root},
+                       //{"cache_directory", cache_root},
                        {"decode_thread_count", 0},
                        //{"web_server_port", 8086},
                        {"etl", {image_config, label_config}},
@@ -607,6 +608,9 @@ TEST(benchmark, imagenet)
             const size_t batches_per_output = 10;
             for (const nervana::fixed_buffer_map& x : *train_set)
             {
+                if (current_batch > 200) {
+                    break;
+                }
                 if (batch_delay != NULL)
                 {
                     batch_delay_watch.stop();
