@@ -692,6 +692,7 @@ TEST(benchmark, imagenet_tbb)
         json label_config = {{"type", "label"}, {"binary", false}};
         auto aug_config   = vector<json>{{{"type", "image"},
                                         {"scale", {0.5, 1.0}},
+                                        {"angle", {-0.2, 0.2}},
                                         {"saturation", {0.5, 2.0}},
                                         {"contrast", {0.5, 1.0}},
                                         {"brightness", {0.5, 1.0}},
