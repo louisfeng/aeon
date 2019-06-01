@@ -411,20 +411,20 @@ void loader_tbb::initialize(const json& config_json)
     m_provider = provider_factory::create(config_json);
 
     using namespace tbb;
-    parallel_for( blocked_range<size_t>(0, block_list.size(), 1),
+    parallel_for(blocked_range<size_t>(0, block_list.size()),
         [&](const blocked_range<size_t>& r) {
             for(auto i=r.begin(); i!=r.end(); ++i) {
-              std::cout << "block: " << i << " " << r.begin() << " " << r.end() << std::endl;
+              //std::cout << "block: " << i << " " << r.begin() << " " << r.end() << std::endl;
               encoded_record_list rc;
               fixed_buffer_map outputs;
               outputs.add_items(m_provider->get_output_shapes(), block_list[i].size());
               size_t index = 0;
               for (auto& r : block_list[i]) {
-                for (auto& e : r) {
-                  std::cout << e << " ";
-                }
-                std::cout << std::endl;
-                std::cout << "index: " << index << std::endl;
+                //for (auto& e : r) {
+                //  std::cout << e << " ";
+                //}
+                //std::cout << std::endl;
+                //std::cout << "index: " << index << std::endl;
                 load_record(r, rc, index, outputs);
                 index++;
               }

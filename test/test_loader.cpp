@@ -698,34 +698,14 @@ TEST(benchmark, imagenet_tbb)
                                         {"flip_enable", true}}};
         json config = {{"manifest_root", manifest_root},
                        {"manifest_filename", manifest},
+                       {"block_size", 16},
                        {"batch_size", batch_size},
-                       {"iteration_mode", "INFINITE"},
-                       {"cache_directory", cache_root},
-                       {"decode_thread_count", 0},
+                       //{"iteration_mode", "INFINITE"},
+                       //{"cache_directory", cache_root},
+                       //{"decode_thread_count", 0},
                        //{"web_server_port", 8086},
                        {"etl", {image_config, label_config}},
                        {"augmentation", aug_config}};
-
-        if (address != NULL && port != NULL)
-        {
-            config["remote"]["address"] = address;
-            config["remote"]["port"]    = std::stoi(port);
-            if (session_id != NULL)
-            {
-                config["remote"]["session_id"] = session_id;
-            }
-            if (async != NULL)
-            {
-                bool b;
-                istringstream(async) >> b;
-                config["remote"]["async"] = b;
-            }
-            if (rdma_address != NULL && rdma_port != NULL)
-            {
-                config["remote"]["rdma_address"] = rdma_address;
-                config["remote"]["rdma_port"]    = std::stoi(rdma_port);
-            }
-        }
 
         chrono::high_resolution_clock                     timer;
         chrono::time_point<chrono::high_resolution_clock> start_time;
@@ -734,66 +714,11 @@ TEST(benchmark, imagenet_tbb)
         stopwatch                                         batch_delay_watch;
         size_t                                            total_average_delay_time{0};
 
-        try
-        {
-            loader_factory factory;
-            auto           train_set = factory.get_loader(config);
+        loader_factory factory;
+        auto           train_set = factory.get_loader(config);
 
-            size_t       total_batch   = ceil((float)train_set->record_count() / (float)batch_size);
-            size_t       current_batch = 0;
-            const size_t batches_per_output = 10;
-            for (const nervana::fixed_buffer_map& x : *train_set)
-            {
-                if (batch_delay != NULL)
-                {
-                    batch_delay_watch.stop();
-                    int delay_in_ms = std::stoi(batch_delay);
-                    usleep(1000 * delay_in_ms);
-                }
-                (void)x;
-                if (++current_batch % batches_per_output == 0)
-                {
-                    auto last_time = start_time;
-                    start_time     = timer.now();
-                    float ms_time =
-                        chrono::duration_cast<chrono::milliseconds>(start_time - last_time).count();
-                    float sec_time = ms_time / 1000.;
-                    cout << "batch " << current_batch << " of " << total_batch;
-                    if (last_time != zero_time)
-                    {
-                        cout << " time " << ms_time;
-                        cout << " " << (float)batches_per_output / sec_time << " batches/s";
-                        total_time +=
-                            chrono::duration_cast<chrono::milliseconds>(start_time - last_time);
-                        cout << "\t\taverage "
-                             << (float)(current_batch - batches_per_output) /
-                                    (total_time.count() / 1000.0f)
-                             << " batches/s" << endl;
-                        if (batch_delay != NULL)
-                        {
-                            size_t current_delay = batch_delay_watch.get_total_microseconds() /
-                                                   batch_delay_watch.get_call_count();
-                            total_average_delay_time += current_delay;
-                            batch_delay_watch = stopwatch();
-                            cout << "batch delay " << current_delay << "us\t\t average "
-                                 << total_average_delay_time /
-                                        ((current_batch - batches_per_output) / batches_per_output)
-                                 << "us" << endl;
-                        }
-                    }
-                    cout << endl;
-                }
-                if (batch_delay != NULL)
-                {
-                    batch_delay_watch.start();
-                }
-            }
-        }
-        catch (exception& err)
-        {
-            cout << "error processing dataset" << endl;
-            cout << err.what() << endl;
-        }
+        size_t       total_batch   = ceil((float)train_set->record_count() / (float)batch_size);
+
     }
 }
 
