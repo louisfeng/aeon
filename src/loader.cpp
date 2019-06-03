@@ -27,6 +27,10 @@
 #include "log.hpp"
 #include "web_app.hpp"
 #include "manifest_nds.hpp"
+#include "file_util.hpp"
+#include "base64.hpp"
+
+#include <tbb/tbb.h>
 
 #if defined(ENABLE_AEON_SERVICE)
 #include "client/loader_remote.hpp"
@@ -289,8 +293,175 @@ std::unique_ptr<loader> loader_factory::get_loader(const json& config)
         return create_loader_remote(config);
     }
 #endif
-    return unique_ptr<loader_local>(new loader_local(config));
+    return unique_ptr<loader_tbb>(new loader_tbb(config));
 }
+
+loader_tbb::loader_tbb(const std::string& config_string)
+    : m_current_iter(*this, false)
+    , m_end_iter(*this, true)
+{
+    auto tmp = json::parse(config_string);
+    initialize(tmp);
+}
+
+loader_tbb::loader_tbb(const json& config_json)
+    : m_current_iter(*this, false)
+    , m_end_iter(*this, true)
+{
+    initialize(config_json);
+}
+
+loader_tbb::~loader_tbb()
+{
+}
+void loader_tbb::load_record(manifest_file::record& element_list,
+                             encoded_record_list& rc)
+{
+    const vector<manifest::element_t>& types = m_manifest_file->get_element_types();
+    encoded_record record;
+    for (int j = 0; j < m_manifest_file->elements_per_record(); ++j)
+    {
+        try
+        {
+            const string& element = element_list[j];
+            switch (types[j])
+            {
+            case manifest::element_t::FILE:
+            {
+                auto buffer = file_util::read_file_contents(element);
+                record.add_element(std::move(buffer));
+                break;
+            }
+            case manifest::element_t::BINARY:
+            {
+                vector<char> buffer  = string2vector(element);
+                vector<char> decoded = base64::decode(buffer);
+                record.add_element(std::move(decoded));
+                break;
+            }
+            case manifest::element_t::STRING:
+            {
+                record.add_element(element.data(), element.size());
+                break;
+            }
+            case manifest::element_t::ASCII_INT:
+            {
+                int32_t value = stod(element);
+                record.add_element(&value, sizeof(value));
+                break;
+            }
+            case manifest::element_t::ASCII_FLOAT:
+            {
+                float value = stof(element);
+                record.add_element(&value, sizeof(value));
+                break;
+            }
+            }
+        }
+        catch (std::exception&)
+        {
+            record.add_exception(current_exception());
+        }
+    }
+    rc.add_record(std::move(record));
+}
+
+void loader_tbb::initialize(const json& config_json)
+{
+    std::cout << "USING TBB loader" << std::endl;
+    string config_string = config_json.dump();
+    m_current_config     = config_json;
+    loader_config lcfg(config_json);
+    m_batch_size = lcfg.batch_size;
+
+    // shared_ptr<manifest> base_manifest;
+    sox_format_init();
+
+    // the manifest defines which data should be included in the dataset
+    m_manifest_file = make_shared<manifest_file>(lcfg.manifest_filename,
+                                                 lcfg.shuffle_manifest,
+                                                 lcfg.manifest_root,
+                                                 lcfg.subset_fraction,
+                                                 lcfg.block_size,
+                                                 lcfg.random_seed);
+
+
+    // TODO: make the constructor throw this error
+    if (record_count() == 0)
+    {
+        throw std::runtime_error("manifest file is empty");
+    }
+
+    std::cout << "blocks: " << m_manifest_file->block_count() << std::endl;
+    auto& block_list = m_manifest_file->get_block_list();
+//    for (const auto& vr : block_list) {
+//      for (const auto& r : vr) {
+//        for (const auto& e : r) {
+//            std::cout << e << std::endl;
+//        }
+//      }
+//    }
+
+    encoded_record_list*                      m_inputs{nullptr};
+    fixed_buffer_map*                         m_outputs{nullptr};
+    m_provider = provider_factory::create(config_json);
+
+    using namespace tbb;
+    parallel_for(blocked_range<size_t>(0, block_list.size()),
+        [&](const blocked_range<size_t>& r) {
+            for(auto i=r.begin(); i!=r.end(); ++i) {
+              //std::cout << "block: " << i << " " << r.begin() << " " << r.end() << std::endl;
+              encoded_record_list rc;
+              fixed_buffer_map outputs;
+              outputs.add_items(m_provider->get_output_shapes(), block_list[i].size());
+              // load all records in this block
+              for (auto& r : block_list[i]) {
+                //for (auto& e : r) {
+                //  std::cout << e << " ";
+                //}
+                //std::cout << std::endl;
+                //std::cout << "index: " << index << std::endl;
+                load_record(r, rc);
+              }
+              // ask provider to process the encoded records
+              // it's actually better to combine this with load_record to keep data
+              // hot in the cache. otherwise we are loading images again. But the API
+              // do this two steps. My previous commit is not the "right" way of using
+              // the API, but performs a bit better.
+              for (size_t j = 0; j < block_list[i].size(); j++) {
+                  m_provider->provide(j, rc, outputs);
+              }
+            }
+        });
+}
+
+void loader_tbb::increment_position()
+{
+    m_position++;
+
+    // Wrap around if this is an infinite iterator
+    if (m_position == m_batch_count_value)
+    {
+        m_position = 0;
+    }
+}
+
+const vector<string>& loader_tbb::get_buffer_names() const
+{
+    return m_provider->get_buffer_names();
+}
+
+const vector<pair<string, shape_type>>& loader_tbb::get_names_and_shapes() const
+{
+    return m_provider->get_output_shapes();
+}
+
+const shape_t& loader_tbb::get_shape(const string& name) const
+{
+    return m_provider->get_output_shape(name).get_shape();
+}
+
+
 
 #if defined(ENABLE_AEON_SERVICE)
 

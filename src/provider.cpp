@@ -117,6 +117,7 @@ void provider::provider_base::provide(int                           idx,
 {
     augmentation aug;
     int          index = 0;
+//    std::cout << "provider base: " << in_buf.size() << std::endl;
     for (const shared_ptr<provider::interface>& provider : m_providers)
     {
         provider->provide(idx, in_buf.record(idx).element(index++), out_buf, aug);
@@ -164,6 +165,7 @@ void provider::image::provide(int                        idx,
                               nervana::fixed_buffer_map& out_buf,
                               augmentation&              aug) const
 {
+//    std::cout << "image " << __func__ << " idx: " << idx << std::endl;
     char* datum_out = out_buf[m_buffer_name]->get_item(idx);
 
     if (datum_in.size() == 0)
@@ -203,6 +205,7 @@ void provider::label::provide(int                        idx,
                               nervana::fixed_buffer_map& out_buf,
                               augmentation&              aug) const
 {
+//    std::cout << "label " << __func__ << " idx: " << idx << std::endl;
     char* target_out = out_buf[m_buffer_name]->get_item(idx);
 
     if (datum_in.size() == 0)

@@ -549,12 +549,13 @@ TEST(benchmark, imagenet)
         int    width      = 224;
         size_t batch_size = 128;
         string manifest   = file_util::path_join(manifest_root, "train-index.csv");
-
+        std::cout << manifest << std::endl;
         json image_config = {
             {"type", "image"}, {"height", height}, {"width", width}, {"channel_major", false}};
         json label_config = {{"type", "label"}, {"binary", false}};
         auto aug_config   = vector<json>{{{"type", "image"},
                                         {"scale", {0.5, 1.0}},
+                                        {"angle", {-0.2, 0.2}},
                                         {"saturation", {0.5, 2.0}},
                                         {"contrast", {0.5, 1.0}},
                                         {"brightness", {0.5, 1.0}},
@@ -563,7 +564,7 @@ TEST(benchmark, imagenet)
                        {"manifest_filename", manifest},
                        {"batch_size", batch_size},
                        {"iteration_mode", "INFINITE"},
-                       {"cache_directory", cache_root},
+                       //{"cache_directory", cache_root},
                        {"decode_thread_count", 0},
                        //{"web_server_port", 8086},
                        {"etl", {image_config, label_config}},
@@ -607,6 +608,9 @@ TEST(benchmark, imagenet)
             const size_t batches_per_output = 10;
             for (const nervana::fixed_buffer_map& x : *train_set)
             {
+                if (current_batch > 200) {
+                    break;
+                }
                 if (batch_delay != NULL)
                 {
                     batch_delay_watch.stop();
@@ -657,6 +661,65 @@ TEST(benchmark, imagenet)
             cout << "error processing dataset" << endl;
             cout << err.what() << endl;
         }
+    }
+}
+
+TEST(benchmark, imagenet_tbb)
+{
+    char* manifest_root = getenv("TEST_IMAGENET_ROOT");
+    char* cache_root    = getenv("TEST_IMAGENET_CACHE");
+    char* address       = getenv("TEST_IMAGENET_ADDRESS");
+    char* port          = getenv("TEST_IMAGENET_PORT");
+    char* rdma_address  = getenv("TEST_IMAGENET_RDMA_ADDRESS");
+    char* rdma_port     = getenv("TEST_IMAGENET_RDMA_PORT");
+    char* session_id    = getenv("TEST_IMAGENET_SESSION_ID");
+    char* async         = getenv("TEST_IMAGENET_ASYNC");
+    char* batch_delay   = getenv("TEST_IMAGENET_BATCH_DELAY");
+
+    if (!manifest_root)
+    {
+        cout << "Environment vars TEST_IMAGENET_ROOT not found\n";
+    }
+    else
+    {
+        int    height     = 224;
+        int    width      = 224;
+        size_t batch_size = 128;
+        string manifest   = file_util::path_join(manifest_root, "train-index.csv");
+
+        json image_config = {
+            {"type", "image"}, {"height", height}, {"width", width}, {"channel_major", false}};
+        json label_config = {{"type", "label"}, {"binary", false}};
+        auto aug_config   = vector<json>{{{"type", "image"},
+                                        {"scale", {0.5, 1.0}},
+                                        {"angle", {-0.2, 0.2}},
+                                        {"saturation", {0.5, 2.0}},
+                                        {"contrast", {0.5, 1.0}},
+                                        {"brightness", {0.5, 1.0}},
+                                        {"flip_enable", true}}};
+        json config = {{"manifest_root", manifest_root},
+                       {"manifest_filename", manifest},
+                       {"block_size", 16},
+                       {"batch_size", batch_size},
+                       //{"iteration_mode", "INFINITE"},
+                       //{"cache_directory", cache_root},
+                       //{"decode_thread_count", 0},
+                       //{"web_server_port", 8086},
+                       {"etl", {image_config, label_config}},
+                       {"augmentation", aug_config}};
+
+        chrono::high_resolution_clock                     timer;
+        chrono::time_point<chrono::high_resolution_clock> start_time;
+        chrono::time_point<chrono::high_resolution_clock> zero_time;
+        chrono::milliseconds                              total_time{0};
+        stopwatch                                         batch_delay_watch;
+        size_t                                            total_average_delay_time{0};
+
+        loader_factory factory;
+        auto           train_set = factory.get_loader(config);
+
+        size_t       total_batch   = ceil((float)train_set->record_count() / (float)batch_size);
+
     }
 }
 
