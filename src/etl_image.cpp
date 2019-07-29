@@ -114,17 +114,18 @@ shared_ptr<image::decoded>
     image::transformer::transform(shared_ptr<augment::image::params> img_xform,
                                   shared_ptr<image::decoded>         img) const
 {
-    vector<cv::Mat> finalImageList;
+    // vector<cv::Mat> finalImageList;
+    auto rc = make_shared<image::decoded>();
     for (int i = 0; i < img->get_image_count(); i++)
     {
-        finalImageList.push_back(transform_single_image(img_xform, img->get_image(i)));
+        if (rc->add(transform_single_image(img_xform, img->get_image(i))) == false)
+        {
+            rc = nullptr;
+            std::cout << "WARNING BAD TRANSFORM" << std::endl;
+            break;
+        }
     }
 
-    auto rc = make_shared<image::decoded>();
-    if (rc->add(finalImageList) == false)
-    {
-        rc = nullptr;
-    }
     return rc;
 }
 

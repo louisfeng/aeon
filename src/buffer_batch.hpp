@@ -54,10 +54,11 @@ public:
         // XXX lfeng: USE MEMCPY HERE
         std::vector<char> tmp(size);
         const char*       p = (const char*)data;
-        for (size_t i = 0; i < size; i++)
-        {
-            tmp[i] = p[i];
-        }
+        // for (size_t i = 0; i < size; i++)
+        // {
+        //     tmp[i] = p[i];
+        // }
+        std::memcpy(&tmp[0], p, size);
         m_elements.emplace_back(tmp);
     }
 

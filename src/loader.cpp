@@ -409,11 +409,12 @@ void loader_tbb::initialize(const json& config_json)
     using namespace tbb;
     parallel_for(blocked_range<size_t>(0, block_list.size()),
         [&](const blocked_range<size_t>& r) {
+            fixed_buffer_map outputs;
+            outputs.add_items(m_provider->get_output_shapes(), block_list[0].size());
+            //std::cout << "range: " << r.size() << std::endl;
             for(auto i=r.begin(); i!=r.end(); ++i) {
               //std::cout << "block: " << i << " " << r.begin() << " " << r.end() << std::endl;
               encoded_record_list rc;
-              fixed_buffer_map outputs;
-              outputs.add_items(m_provider->get_output_shapes(), block_list[i].size());
               // load all records in this block
               for (auto& r : block_list[i]) {
                 //for (auto& e : r) {
@@ -424,9 +425,11 @@ void loader_tbb::initialize(const json& config_json)
                 load_record(r, rc);
               }
               // ask provider to process the encoded records
+              ///*
               for (size_t j = 0; j < block_list[i].size(); j++) {
                   m_provider->provide(j, rc, outputs);
               }
+              //*/
             }
         });
 }

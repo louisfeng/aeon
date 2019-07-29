@@ -132,7 +132,7 @@ include_directories(${SOX_INCLUDE_DIRS})
 link_directories(${SOX_LIBRARY_DIRS})
 add_definitions(${SOX_CFLAGS_OTHERS})
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS "/opt/opencv-3.4.6/share/OpenCV")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})

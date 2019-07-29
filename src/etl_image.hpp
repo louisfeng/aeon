@@ -102,7 +102,7 @@ class nervana::image::decoded : public interface::decoded_image
 public:
     decoded() {}
     decoded(cv::Mat img) { _images.push_back(img); }
-    bool add(cv::Mat img)
+    bool add(const cv::Mat& img)
     {
         _images.push_back(img);
         return all_images_are_same_size();
