@@ -160,10 +160,10 @@ if (PYTHON_PLUGIN)
 endif (PYTHON_PLUGIN)
 
 # TBB
-set(TBB_ROOT_DIR /opt/intel/tbb2019_20190522oss)
+set(TBB_ROOT_DIR ~/opt/intel/tbb2019_20191006oss)
 set(TBB_INCLUDE_DIRS ${TBB_ROOT_DIR}/include)
 include_directories(${TBB_INCLUDE_DIRS})
-set(TBB_RELEASE_DIR ${TBB_ROOT_DIR}/lib/intel64/gcc4.7)
+set(TBB_RELEASE_DIR ${TBB_ROOT_DIR}/lib/intel64/gcc4.8)
 link_directories(${TBB_RELEASE_DIR})
 set(TBB_LIBS tbb tbbmalloc)
 set(TBB_LIBRARY_DIRS ${TBB_RELEASE_DIR})
